@@ -22,7 +22,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     public UserDetails loadUserByUsername(String nombreUsuario) throws UsernameNotFoundException {
                
 
-        return new User("nico","123",new ArrayList<>());
+        return new User("nicgamarra2010@gmail.com","123",new ArrayList<>());
     }
     
 }
