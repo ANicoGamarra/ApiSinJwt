@@ -51,5 +51,11 @@ public class UsuarioService implements IUsuarioService {
     public void editarUsuario(Usuario user) {
         usuarioRepo.save(user);
     }
+
+    @Override
+    public Usuario getByUsername(String nombreUsuario) {
+       
+        return usuarioRepo.findByNombreUsuario(nombreUsuario);
+    }
     
 }

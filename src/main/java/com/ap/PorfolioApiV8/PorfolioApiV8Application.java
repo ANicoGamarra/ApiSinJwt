@@ -13,7 +13,7 @@ public class PorfolioApiV8Application {
 		SpringApplication.run(PorfolioApiV8Application.class, args);
 	}
 
-
+/*
 	@Bean
 	public WebMvcConfigurer corsConfigurer() {
 			return new WebMvcConfigurer() {
@@ -26,5 +26,5 @@ public class PorfolioApiV8Application {
 			};
 	}
 	
-
+*/
 }

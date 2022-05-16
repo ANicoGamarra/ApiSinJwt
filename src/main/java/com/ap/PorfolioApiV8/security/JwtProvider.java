@@ -1,25 +1,24 @@
 package com.ap.PorfolioApiV8.security;
 
 import java.util.Date;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.stereotype.Component;
-
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.MalformedJwtException;
+
 import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.SignatureException;
-import io.jsonwebtoken.UnsupportedJwtException;
+
 
 @Component
 public class JwtProvider {
     
-    private final static Logger logger = LoggerFactory.getLogger(JwtProvider.class);
+    //private final static Logger logger = LoggerFactory.getLogger(JwtProvider.class);
+
+    @Value("${jwt-secret}")
+    private String secretKey;
 
     @Value("${jwt-secret}")
     private String secret;
@@ -27,7 +26,7 @@ public class JwtProvider {
     @Value("${jwt-expiration}")
     private int expiration;
 
-    public String generarToken(Authentication authentication) {
+ /*    public String generarToken(Authentication authentication) {
         String username = authentication.getName();       
        
         String token = Jwts.builder().setSubject(username)
@@ -70,4 +69,32 @@ public class JwtProvider {
                 .signWith(SignatureAlgorithm.HS512, secret).compact();
 
     }
+ */
+
+    //token de walter
+    public String getJWTToken(String username) {
+
+        //String secretKey = "W3L0v3Arg3nt1n4";
+
+
+        List<GrantedAuthority> grantedAuthorities = AuthorityUtils
+                .commaSeparatedStringToAuthorityList("ROLE_USER");
+
+        String token = Jwts
+                .builder()
+                .setId("ap17380")
+                .setSubject(username)
+                .claim("authorities",
+                        grantedAuthorities.stream()
+                                .map(GrantedAuthority::getAuthority)
+                                .collect(Collectors.toList()))
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + 60 * 60 * 1000)) // 1 hora de duración
+                .signWith(SignatureAlgorithm.HS512,
+                        secretKey.getBytes())
+                .compact();
+
+        return "Bearer " + token;
+    }
+
 }

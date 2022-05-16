@@ -1,15 +1,11 @@
 package com.ap.PorfolioApiV8.controllers;
 
-import com.ap.PorfolioApiV8.models.Login;
-import com.ap.PorfolioApiV8.security.JwtDto;
+import com.ap.PorfolioApiV8.Services.Usuario.IUsuarioService;
+import com.ap.PorfolioApiV8.models.Usuario;
 import com.ap.PorfolioApiV8.security.JwtProvider;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,19 +16,24 @@ import org.springframework.web.bind.annotation.RestController;
 public class LoginController {
     
     @Autowired
-    private JwtProvider jwtProvider;
+    private IUsuarioService usuarioServ;
     @Autowired
-    private AuthenticationManager authenticationManager;
-    private JwtDto token = new JwtDto("null");
+    private JwtProvider jwtProvider;
+    
 
     @PostMapping
-    public ResponseEntity<?> authenticateUser(@RequestBody Login login) {
-        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(login.getNombreUsuario(), login.getPassword()));
+    public ResponseEntity<Usuario> login(@Validated @RequestBody Usuario user) {
 
-       SecurityContextHolder.getContext().setAuthentication(authentication);
+        Usuario usuarioLogueado = usuarioServ.getByUsername(user.getNombreUsuario());
+        if (usuarioLogueado.getPassword().equals(user.getPassword())) {
+            String token = jwtProvider.getJWTToken(user.getNombreUsuario());
+            usuarioLogueado.setToken(token);
+            usuarioLogueado.setPassword(null);
+            return ResponseEntity.ok().body(usuarioLogueado);
+        } else {
+            return ResponseEntity.badRequest().build();
+        }
 
-       String token = this.jwtProvider.generarToken(authentication);
-        return ResponseEntity.ok(new JwtDto(token));
     }
 
 

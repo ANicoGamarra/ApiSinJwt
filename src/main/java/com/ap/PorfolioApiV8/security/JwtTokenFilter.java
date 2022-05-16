@@ -1,59 +1,81 @@
 package com.ap.PorfolioApiV8.security;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
-import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.UnsupportedJwtException;
 
 public class JwtTokenFilter extends OncePerRequestFilter {
 
-    @Autowired
-    private JwtProvider jwtProvider;
-    
-    @Autowired
-	private UserDetailsServiceImpl userDetailsService;
+	private final String HEADER = "auth";
+	private final String PREFIX = "Bearer ";
+	private final String SECRET = "W3L0v3Arg3nt1n4";
 
+	private FilterChain chain;
 
     @Override
     protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain filterChain)
             throws ServletException, IOException {
     //obtenemos el token de la solicitud HTTP
-		String token = this.getTokenRequest(req);
-		
-		//validamos el token
-		if(StringUtils.hasText(token) && jwtProvider.validateToken(token)) {
-			//obtenemos el username del token
-			String nombreUsuario = jwtProvider.getNombreUsuarioFromToken(token);
-			
-			//cargamos el usuario asociado al token
-			UserDetails userDetails = userDetailsService.loadUserByUsername(nombreUsuario);
-			UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(userDetails, null,userDetails.getAuthorities());
-			authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
-			
-			//establecemos la seguridad
-			SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+	try {
+		if (checkJWTToken(req, res)) {
+			Claims claims = validateToken(req);
+			if (claims.get("authorities") != null) {
+				setUpSpringAuthentication(claims);
+			} else {
+				SecurityContextHolder.clearContext();
+			}
+		} else {
+			SecurityContextHolder.clearContext();
 		}
-		filterChain.doFilter(req, res);
-    }
+		chain.doFilter(req, res);
+	} catch (ExpiredJwtException | UnsupportedJwtException | MalformedJwtException e) {
+		res.setStatus(HttpServletResponse.SC_FORBIDDEN);
+		((HttpServletResponse) res).sendError(HttpServletResponse.SC_FORBIDDEN, e.getMessage());
+		return;
+	}
+}	
 
-    //Bearer token de acceso
-	private String getTokenRequest(HttpServletRequest req) {
-        String JWT="";
-String bearerToken = req.getHeader("Authorization");
-if(StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer")) {
-    JWT= bearerToken.substring(7,bearerToken.length());
+private Claims validateToken(HttpServletRequest request) {
+	String jwtToken = request.getHeader(HEADER).replace(PREFIX, "");
+	return Jwts.parser().setSigningKey(SECRET.getBytes()).parseClaimsJws(jwtToken).getBody();
 }
-return JWT;
+
+/**
+ * Authentication method in Spring flow
+ * 
+ * @param claims
+ */
+private void setUpSpringAuthentication(Claims claims) {
+	@SuppressWarnings("unchecked")
+	List<String> authorities = (List<String>) claims.get("authorities");
+
+	UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(claims.getSubject(), null,
+			authorities.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList()));
+	SecurityContextHolder.getContext().setAuthentication(auth);
+
 }
+
+private boolean checkJWTToken(HttpServletRequest request, HttpServletResponse res) {
+	String authenticationHeader = request.getHeader(HEADER);
+	if (authenticationHeader == null || !authenticationHeader.startsWith(PREFIX))
+		return false;
+	return true;
+}
+
 
 }

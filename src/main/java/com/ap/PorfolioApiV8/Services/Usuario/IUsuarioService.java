@@ -1,6 +1,7 @@
 package com.ap.PorfolioApiV8.Services.Usuario;
 
 import java.util.List;
+import java.util.Optional;
 
 import com.ap.PorfolioApiV8.models.Usuario;
 
@@ -19,5 +20,7 @@ public interface IUsuarioService {
     public ResponseEntity<Usuario> buscarUsuarioId (Long id);
     
     public void editarUsuario (Usuario user);
+
+    public Usuario getByUsername(String nombreUsuario);
     
 }
