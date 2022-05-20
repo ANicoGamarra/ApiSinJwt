@@ -2,7 +2,7 @@ package com.ap.PorfolioApiV8.controllers;
 
 import com.ap.PorfolioApiV8.Services.Usuario.IUsuarioService;
 import com.ap.PorfolioApiV8.models.Usuario;
-import com.ap.PorfolioApiV8.security.JwtProvider;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -17,8 +17,7 @@ public class LoginController {
     
     @Autowired
     private IUsuarioService usuarioServ;
-    @Autowired
-    private JwtProvider jwtProvider;
+   
     
 
     @PostMapping
@@ -26,8 +25,8 @@ public class LoginController {
 
         Usuario usuarioLogueado = usuarioServ.getByUsername(user.getNombreUsuario());
         if (usuarioLogueado.getPassword().equals(user.getPassword())) {
-            String token = jwtProvider.getJWTToken(user.getNombreUsuario());
-            usuarioLogueado.setToken(token);
+            //String token = jwtProvider.getJWTToken(user.getNombreUsuario());
+            //usuarioLogueado.setToken(token);
             usuarioLogueado.setPassword(null);
             return ResponseEntity.ok().body(usuarioLogueado);
         } else {
@@ -35,6 +34,9 @@ public class LoginController {
         }
 
     }
+
+
+ 
 
 
 }
